@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chess_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chess_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - chess_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chess_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  chess_db_data:
