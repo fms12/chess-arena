@@ -33,7 +33,7 @@ setting = Setting()
 #     C <--> D
 # ```
 
----
+# ---
 
 ### The 5 Pillars of the Docker DB Setup
 
