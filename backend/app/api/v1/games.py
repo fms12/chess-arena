@@ -1,8 +1,12 @@
-from fastapi import APIRouter,HTTPException,WebSocket, WebSocketDisconnect
+from fastapi import APIRouter,HTTPException,WebSocket, WebSocketDisconnect,Depends
 from pydantic import BaseModel
 import uuid
 import chess
 from app.realtime.manager import manager
+from app.crud.game import createGame, getGameById
+from sqlmodel import Session
+from app.core.db import get_session
+
 
 router = APIRouter(prefix="/games", tags=["games"])
 wsRouter = APIRouter(tags=["WebSocket"])
@@ -39,26 +43,29 @@ games ={}
 
 
 @router.post("/")
-def create_game():
-    game_id = str(uuid.uuid4())
-    game = {
-        "id":game_id,
-        "status":"waiting",
-        "players":[],
-        "fen": chess.STARTING_FEN,
-        "moves":[],
-        "result": None,
-        "termination": None,
-        "draw_offer": None,
-    }
-    games[game_id] = game
+def create_game(session: Session = Depends(get_session)):
+    # game_id = str(uuid.uuid4())
+    # game = {
+    #     "id":game_id,
+    #     "status":"waiting",
+    #     "players":[],
+    #     "fen": chess.STARTING_FEN,
+    #     "moves":[],
+    #     "result": None,
+    #     "termination": None,
+    #     "draw_offer": None,
+    # }
+    # games[game_id] = game
+    game = createGame(session)
     return game
+    
 
 @router.get("/{game_id}")
-def get_game_id(game_id: str):
-    if game_id not in games:
+def get_game_id(game_id: uuid.UUID, session: Session = Depends(get_session)):
+    game = getGameById(session, game_id)
+    if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    return games[game_id]
+    return game 
 
 @router.post("/{game_id}/join")
 async def game_join(game_id:str, join_request: JoinGameRequest):

@@ -3,7 +3,7 @@ import os
 class Setting: 
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Chess Game API")
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "DATABASE_URL=postgresql+psycopg://postgres:mysecretpassword@localhost:5432/chess_db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:mysecretpassword@localhost:5432/chess_db")
 
 
 setting = Setting()
@@ -131,3 +131,5 @@ setting = Setting()
 #   docker compose down -v
 #   ```
 #   *(The `-v` flag deletes the volume, wiping all data so you can start with a fresh slate).*
+
+#  check for thec connection```docker compose exec db pg_isready -U postgres -d chess_db```
