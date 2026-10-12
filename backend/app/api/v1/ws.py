@@ -5,7 +5,7 @@ from sqlmodel import Session
 from app.crud.game import getGameById
 from app.realtime.manager import manager
 from app.core.db import get_session
-from app.schema.game import GameRead
+from app.schema.game import GameRead, serializeGame
 
 router = APIRouter(tags=["WebSocket"])
 
@@ -30,7 +30,7 @@ async def game_websocket(
 
     # 2. Convert Game to GameRead JSON-compatible dictionary
     # Assuming `GameRead` is a SQLModel/Pydantic model
-    game_read_data = GameRead.model_validate(game).model_dump(mode="json")
+    game_read_data = serializeGame(game)
 
     # 3. Connect via the existing manager (which handles adding to broadcasts)
     await manager.connect(game_id, websocket)

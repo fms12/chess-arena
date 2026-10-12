@@ -18,3 +18,31 @@ class GameRead(BaseModel):
         black_player_name: str | None = None
         moves: list[MoveRead] = Field(default_factory=list)
         model_config = {"from_attributes": True}
+        draw_offer: str | None = None
+        
+class JoinGameRequest(BaseModel):
+    player_name: str
+    
+    
+class MoveRequest(BaseModel):
+    player_name: str
+    from_square: str
+    to_square: str
+    
+    
+class ResignGameRequest(BaseModel):
+    player_name: str
+    
+    
+class DrawOfferRequest(BaseModel):
+    player_name: str
+    
+    
+class DrawResponseRequest (BaseModel):
+    player_name: str
+    accept: bool
+    
+    
+    
+def serializeGame(game) -> dict:
+    return GameRead.model_validate(game).model_dump(mode="json")

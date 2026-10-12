@@ -3,40 +3,18 @@ from pydantic import BaseModel
 import uuid
 import chess
 from app.realtime.manager import manager
-from app.crud.game import createGame, getGameById, updateGame, createMove
+from app.crud.game import createGame, getGameById, updateGame, createMove, saveMoveGame
 from sqlmodel import Session
 from app.core.db import get_session
-from app.schema.game import GameRead, MoveRead
-
+from app.schema.game import GameRead, MoveRead,JoinGameRequest, MoveRequest, ResignGameRequest, DrawOfferRequest, DrawResponseRequest, serializeGame
 
 router = APIRouter(prefix="/games", tags=["games"])
 wsRouter = APIRouter(tags=["WebSocket"])
 
 
 
-class JoinGameRequest(BaseModel):
-    player_name: str
-    
-    
-class MoveRequest(BaseModel):
-    player_name: str
-    from_square: str
-    to_square: str
-    
-    
-class ResignGameRequest(BaseModel):
-    player_name: str
-    
-    
-class DrawOfferRequest(BaseModel):
-    player_name: str
-    
-    
-class DrawResponseRequest (BaseModel):
-    player_name: str
-    accept: bool
-    
-games ={}
+
+# games ={}
 # eg>
 #  games ={
     #  1234:{id: 124,stauts,playes:[]}
@@ -83,14 +61,16 @@ async def game_join(game_id:uuid.UUID, join_request: JoinGameRequest,session: Se
         game.black_player_name = join_request.player_name
         game.status = "active"
 
-    gameData = updateGame(session,game)
+    game = updateGame(session,game)
     
-    # await manager.broadcast(
-    #     game_id,{
-    #     "type":"game_state",
-    #     "game": gameData,
-    #     },            
-    # )
+    gameData = serializeGame(game)
+    
+    await manager.broadcast(
+        game_id,{
+        "type":"game_state",
+        "game": gameData,
+        },            
+    )
     
     return gameData
 
@@ -158,9 +138,27 @@ async def make_move(game_id:uuid.UUID, move_request: MoveRequest, session: Sessi
         game.termination = "stalemate"
         game.result = "draw"
         
-    game.fen= board.fen()
-    gameMove = createMove(session, game, uci, san, board.fen(), len(game.moves)+1)
-    gameData = updateGame(session,game)
+    # move ={
+        
+    #     "uci": uci,
+    #     "san": san,
+    #     "fen": board.fen(),
+    #     "move_number": len(game.moves)+1,
+    # }
+    
+    # gameMove = createMove(session, game, uci, san, board.fen(), len(game.moves)+1)
+    # game = updateGame(session,game)
+    try:
+        game = saveMoveGame(session,game,uci,san,board.fen())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error saving move") from e
+    gameData= serializeGame(game)
+    await manager.broadcast(
+        game_id,{
+        "type":"game_state",
+        "game": gameData,
+        },            
+    )
     return gameData
 
 
@@ -189,14 +187,15 @@ async def player_resign(game_id: uuid.UUID, resign_request: ResignGameRequest,se
     game.termination = "resignation"
     game.result =  "white_won" if player == "black" else  "black_won"
     game = updateGame(session, game)
-    # await manager.broadcast(
-    # game_id,
-    # {
-    #     "type": "game_state",
-    #     "game": gameData,
-    # },
-    #     )
-    return game
+    gameData = serializeGame(game)
+    await manager.broadcast(
+    game_id,
+    {
+        "type": "game_state",
+        "game": gameData,
+    },
+        )
+    return gameData
     
     
 @router.post("/{game_id}/draw-offer")
@@ -221,15 +220,16 @@ async def player_draw(game_id: uuid.UUID, draw_req:DrawOfferRequest,session:Sess
         
     game.draw_offer = player
     game = updateGame(session, game)
-    # await manager.broadcast(
-    # game_id,
-    # {
-    #     "type": "game_state",
-    #     "game": gameData,
-    # },
-    #     )
+    gameData = serializeGame(game)
+    await manager.broadcast(
+    game_id,
+    {
+        "type": "game_state",
+        "game": gameData,
+    },
+        )
     
-    return  game
+    return  gameData
 
 
 @router.post("/{game_id}/draw-response")
@@ -269,13 +269,14 @@ async def respond_to_draw_offer(game_id: uuid.UUID, draw_req:DrawResponseRequest
         game.draw_offer = None
     
     game = updateGame(session, game)
-        
-    # await manager.broadcast(
-    # game_id,
-    # {
-    #     "type": "game_state",
-    #     "game": gameData,
-    # },
-    # )
-    return  game
+    gameData = serializeGame(game)
+
+    await manager.broadcast(
+    game_id,
+    {
+        "type": "game_state",
+        "game": gameData,
+    },
+    )
+    return  gameData
 

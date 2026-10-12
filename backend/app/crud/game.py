@@ -1,5 +1,5 @@
 import uuid
-from sqlmodel import Session
+from sqlmodel import Session, func
 from app.model import Game,Move
 
 
@@ -32,3 +32,28 @@ def createMove(session:Session,game:Game,uci:str,san:str,fen:str,move_number:int
     session.refresh(move_obj)
     return move_obj
      
+     
+# highest_move_number = None 
+def saveMoveGame(session: Session, game: Game, uci: str, san: str, fen: str):
+    highest_move_number = (
+        session.query(func.max(Move.move_number))
+        .filter(Move.game_id == game.id)
+        .scalar()
+    ) or 0
+    game.fen = fen
+    move_obj = Move(
+        game_id=game.id, 
+        uci=uci, 
+        san=san, 
+        fen=fen, 
+        move_number=highest_move_number+1
+    )
+    try:
+        session.add(move_obj)
+        session.add(game)
+        session.commit()
+        session.refresh(game)
+    except Exception as e:
+        session.rollback()
+        raise
+    return game
