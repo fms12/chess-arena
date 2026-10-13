@@ -69,6 +69,7 @@ dependencies = [
     { name = "alembic" },
     { name = "fastapi", extra = ["standard"] },
     { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic-settings" },
     { name = "python-chess" },
     { name = "sqlmodel" },
 ]
@@ -84,6 +85,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.5" },
+    { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "python-chess", specifier = ">=1.999" },
     { name = "sqlmodel", specifier = ">=0.0.42" },
 ]

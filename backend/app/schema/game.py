@@ -7,7 +7,10 @@ class MoveRead(BaseModel):
         fen: str
         move_number: int
         model_config = {"from_attributes": True}
-        
+
+class BotColor(BaseModel):
+    color: str|  "white" |"black"
+
 class GameRead(BaseModel):
         id: UUID
         status: str
@@ -19,6 +22,8 @@ class GameRead(BaseModel):
         moves: list[MoveRead] = Field(default_factory=list)
         model_config = {"from_attributes": True}
         draw_offer: str | None = None
+        bot_color: BotColor
+        
         
 class JoinGameRequest(BaseModel):
     player_name: str
@@ -42,7 +47,20 @@ class DrawResponseRequest (BaseModel):
     player_name: str
     accept: bool
     
+
+
     
     
 def serializeGame(game) -> dict:
     return GameRead.model_validate(game).model_dump(mode="json")
+
+
+class Evaluation(BaseModel):
+    type: str | None  = None
+    value: int | None = None
+
+class AnalysisGameRead(BaseModel):
+    best_move:str | None = None
+    evaluation: Evaluation 
+    principal_variation:list[str] = Field(default_factory=list)
+    

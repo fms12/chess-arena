@@ -141,7 +141,7 @@ async def make_move(game_id:uuid.UUID, move_request: MoveRequest, session: Sessi
     # move ={
         
     #     "uci": uci,
-    #     "san": san,
+    #     "san": san,a
     #     "fen": board.fen(),
     #     "move_number": len(game.moves)+1,
     # }

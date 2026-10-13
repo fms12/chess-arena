@@ -1,13 +1,15 @@
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class Setting: 
-    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Chess Game API")
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "Chess Game API"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:mysecretpassword@localhost:5432/chess_db")
+    DATABASE_URL: str
+    STOCKFISH_PATH:str
 
+    # Automatically loads the .env file
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-setting = Setting()
-
+setting = Settings()
 
 ### The Big Picture: Why Docker for the Database?
 

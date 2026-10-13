@@ -5,7 +5,6 @@ from typing import Optional
 from sqlalchemy import Column, TIMESTAMP, text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
-
 def generate_uuid():
     # Auto-generate a unique UUID for every row.
     return uuid.uuid4()
@@ -38,7 +37,7 @@ class Game(SQLModel, table=True):
         server_default=text("CURRENT_TIMESTAMP"),
         server_onupdate=text("CURRENT_TIMESTAMP"),
     ))
-
+    # bot_color: str | None = None
 
 class Move(SQLModel, table=True):
     __tablename__ = "moves"
