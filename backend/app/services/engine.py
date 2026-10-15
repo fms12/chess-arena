@@ -26,13 +26,20 @@ def chessEngine(userFen:str):
         engine.quit()
 
 
-def botService(botFen:str):
+def botService(botFen:str,difficulty:int):
     board = chess.Board(botFen)
     if board.is_game_over():
             return None 
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
     try:
-        info = engine.play(board, chess.engine.Limit(time = 0.2))
+        difficultyLevel = 0.2
+        if difficulty == "easy":
+            difficultyLevel = 0.05
+        elif difficulty == "medium":
+            difficultyLevel = 0.5
+        elif difficulty == "hard":
+            difficultyLevel = 0.5
+        info = engine.play(board, chess.engine.Limit(time = difficultyLevel))
         chosen_moves = info.move.uci()
         return chosen_moves
     finally :

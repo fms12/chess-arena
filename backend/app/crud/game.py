@@ -57,3 +57,18 @@ def saveMoveGame(session: Session, game: Game, uci: str, san: str, fen: str):
         session.rollback()
         raise
     return game
+
+
+def createComputerGame(session: Session,white_player_name: str | None,black_player_name: str | None,bot_color: str,bot_difficulty: str) -> Game:
+    game_data = {
+        "white_player_name": white_player_name,
+        "black_player_name": black_player_name,
+        "bot_color": bot_color,
+        "bot_difficulty": bot_difficulty,
+        "status": "active"
+    }
+    game_obj = Game(**game_data)
+    session.add(game_obj)
+    session.commit()
+    session.refresh(game_obj)
+    return game_obj 

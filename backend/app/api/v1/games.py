@@ -6,7 +6,8 @@ from app.realtime.manager import manager
 from app.crud.game import createGame, getGameById, updateGame, createMove, saveMoveGame
 from sqlmodel import Session
 from app.core.db import get_session
-from app.schema.game import GameRead, MoveRead,JoinGameRequest, MoveRequest, ResignGameRequest, DrawOfferRequest, DrawResponseRequest, serializeGame
+from app.services.engine import botService
+from app.schema.game import GameRead, MoveRead,JoinGameRequest, MoveRequest, ResignGameRequest, DrawOfferRequest, DrawResponseRequest, serializeGame,color_to_move
 
 router = APIRouter(prefix="/games", tags=["games"])
 wsRouter = APIRouter(tags=["WebSocket"])
@@ -93,7 +94,6 @@ async def make_move(game_id:uuid.UUID, move_request: MoveRequest, session: Sessi
     elif game.black_player_name == move_request.player_name:
         player = "black"
         
-   
     
     if player is None :
         raise HTTPException(
@@ -138,18 +138,15 @@ async def make_move(game_id:uuid.UUID, move_request: MoveRequest, session: Sessi
         game.termination = "stalemate"
         game.result = "draw"
         
-    # move ={
-        
-    #     "uci": uci,
-    #     "san": san,a
-    #     "fen": board.fen(),
-    #     "move_number": len(game.moves)+1,
-    # }
-    
-    # gameMove = createMove(session, game, uci, san, board.fen(), len(game.moves)+1)
-    # game = updateGame(session,game)
     try:
         game = saveMoveGame(session,game,uci,san,board.fen())
+        if game.bot_color and color_to_move(game.fen) == game.bot_color:
+            bot_uci = botService(game.fen,game.bot_difficulty)
+            board = chess.Board(game.fen)
+            move = chess.Move.from_uci(bot_uci)
+            san = board.san(move)
+            board.push(move)
+            game = saveMoveGame(session, game, bot_uci, san, board.fen())
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error saving move") from e
     gameData= serializeGame(game)

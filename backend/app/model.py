@@ -37,7 +37,8 @@ class Game(SQLModel, table=True):
         server_default=text("CURRENT_TIMESTAMP"),
         server_onupdate=text("CURRENT_TIMESTAMP"),
     ))
-    # bot_color: str | None = None
+    bot_color: str | None = None
+    bot_difficulty : str | None = None
 
 class Move(SQLModel, table=True):
     __tablename__ = "moves"

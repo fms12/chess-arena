@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
+import chess
+
 
 class MoveRead(BaseModel):
         uci: str
@@ -22,7 +24,6 @@ class GameRead(BaseModel):
         moves: list[MoveRead] = Field(default_factory=list)
         model_config = {"from_attributes": True}
         draw_offer: str | None = None
-        bot_color: BotColor
         
         
 class JoinGameRequest(BaseModel):
@@ -47,20 +48,28 @@ class DrawResponseRequest (BaseModel):
     player_name: str
     accept: bool
     
-
-
-    
     
 def serializeGame(game) -> dict:
     return GameRead.model_validate(game).model_dump(mode="json")
+
+
+def color_to_move(fen: str) -> str:
+    board = chess.Board(fen)
+    return "white" if board.turn else "black"
 
 
 class Evaluation(BaseModel):
     type: str | None  = None
     value: int | None = None
 
+#  stockfish game schema
 class AnalysisGameRead(BaseModel):
     best_move:str | None = None
     evaluation: Evaluation 
     principal_variation:list[str] = Field(default_factory=list)
     
+# Computer/bot game schema
+class ComputerGameRequest(BaseModel):
+        player_name: str
+        player_color: str
+        difficulty: str
