@@ -23,7 +23,7 @@ wsRouter = APIRouter(tags=["WebSocket"])
 
 
 
-@router.post("/")
+@router.post("/", response_model=GameRead)
 def create_game(session: Session = Depends(get_session)):
     # game_id = str(uuid.uuid4())
     # game = {
@@ -139,14 +139,27 @@ async def make_move(game_id:uuid.UUID, move_request: MoveRequest, session: Sessi
         game.result = "draw"
         
     try:
-        game = saveMoveGame(session,game,uci,san,board.fen())
-        if game.bot_color and color_to_move(game.fen) == game.bot_color:
-            bot_uci = botService(game.fen,game.bot_difficulty)
-            board = chess.Board(game.fen)
-            move = chess.Move.from_uci(bot_uci)
-            san = board.san(move)
-            board.push(move)
-            game = saveMoveGame(session, game, bot_uci, san, board.fen())
+        game = saveMoveGame(session, game, uci, san, board.fen())
+        if game.status == "active" and game.bot_color and color_to_move(game.fen) == game.bot_color:
+            bot_uci = botService(game.fen, game.bot_difficulty)
+            if bot_uci:
+                board = chess.Board(game.fen)
+                move = chess.Move.from_uci(bot_uci)
+                san = board.san(move)
+                board.push(move)
+                if board.is_insufficient_material():
+                    game.status = "completed"
+                    game.result = "draw"
+                    game.termination = "insufficient_material"
+                elif board.is_checkmate():
+                    game.status = "completed"
+                    game.termination = "checkmate"
+                    game.result = f"{game.bot_color}_won"
+                elif board.is_stalemate():
+                    game.status = "completed"
+                    game.termination = "stalemate"
+                    game.result = "draw"
+                game = saveMoveGame(session, game, bot_uci, san, board.fen())
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error saving move") from e
     gameData= serializeGame(game)

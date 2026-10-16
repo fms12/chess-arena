@@ -1,7 +1,7 @@
 from fastapi import APIRouter,HTTPException,Depends
 from sqlmodel import Session
 from app.core.db import get_session
-from app.crud.game import createComputerGame
+from app.crud.game import createComputerGame, saveMoveGame
 from app.schema.game import ComputerGameRequest
 from app.schema.game import GameRead
 from app.services.engine import botService

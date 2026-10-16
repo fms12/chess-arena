@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
 import chess
-
+from typing import Literal
 
 class MoveRead(BaseModel):
         uci: str
@@ -11,7 +11,7 @@ class MoveRead(BaseModel):
         model_config = {"from_attributes": True}
 
 class BotColor(BaseModel):
-    color: str|  "white" |"black"
+    color: Literal["white", "black"]
 
 class GameRead(BaseModel):
         id: UUID
@@ -24,6 +24,8 @@ class GameRead(BaseModel):
         moves: list[MoveRead] = Field(default_factory=list)
         model_config = {"from_attributes": True}
         draw_offer: str | None = None
+        bot_color: str | None = None
+        bot_difficulty: str | None = None
         
         
 class JoinGameRequest(BaseModel):
@@ -71,5 +73,5 @@ class AnalysisGameRead(BaseModel):
 # Computer/bot game schema
 class ComputerGameRequest(BaseModel):
         player_name: str
-        player_color: str
-        difficulty: str
+        player_color: Literal["white", "black"]
+        difficulty: Literal["easy", "medium", "hard"]

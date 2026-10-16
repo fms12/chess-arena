@@ -26,7 +26,7 @@ def chessEngine(userFen:str):
         engine.quit()
 
 
-def botService(botFen:str,difficulty:int):
+def botService(botFen:str,difficulty:str):
     board = chess.Board(botFen)
     if board.is_game_over():
             return None 
@@ -38,7 +38,7 @@ def botService(botFen:str,difficulty:int):
         elif difficulty == "medium":
             difficultyLevel = 0.5
         elif difficulty == "hard":
-            difficultyLevel = 0.5
+            difficultyLevel = 1.0
         info = engine.play(board, chess.engine.Limit(time = difficultyLevel))
         chosen_moves = info.move.uci()
         return chosen_moves

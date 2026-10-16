@@ -8,5 +8,5 @@ api_router = APIRouter()
 
 api_router.include_router(games_router)
 api_router.include_router(ws_router)
-api_router.include_router(analygsis_router)
+api_router.include_router(analysis_router)
 api_router.include_router(computer_router)
