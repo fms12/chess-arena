@@ -1,45 +1,53 @@
 import { useState, useEffect } from "react";
 import type { Game } from "../types/game";
 
-
-const apiUrl = import.meta.env.VITE_WS_BASE_URL
+const apiUrl = import.meta.env.VITE_WS_BASE_URL;
 
 export function useGameSocket(gameId: string | null) {
+  const [connectionState, setConnectionState] = useState<
+    "idle" | "connecting" | "connected" | "error"
+  >("idle");
 
-    const [connectionState, setConnectionState] = useState<
-      "idle" | "connecting" | "connected" | "error"
-    >("idle");
+  const [game, setGame] = useState<Game | null>(null);
 
-    const [game, setGame] = useState<Game | null>(null);
+  useEffect(() => {
+    if (!gameId) {
+      setConnectionState("idle");
+      setGame(null);
+      return;
+    }
 
-    useEffect(()=>{
+    setConnectionState("connecting");
 
-        if (!gameId) return;
-        // setConnectionState("connecting");
+    const socket = new WebSocket(`${apiUrl}/games/${gameId}/ws`);
 
-        const socket = new WebSocket(`${apiUrl}/games/${gameId}/ws`);
-        socket.onopen=()=>{
-            setConnectionState("connected")
+    socket.onopen = () => {
+      setConnectionState("connected");
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "game_state") {
+          setGame(message.game);
         }
-        socket.onmessage = (event) => {
-          const message = JSON.parse(event.data);
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+      }
+    };
 
-          if (message.type === "game_state") {
-            setGame(message.game);
-          }
-        };
+    socket.onerror = () => {
+      setConnectionState("error");
+    };
 
-        socket.onerror =()=>{
-            setConnectionState("error")
-        }
+    socket.onclose = () => {
+      setConnectionState("idle");
+    };
 
-        return()=>{
-            socket.close();
-        }
+    return () => {
+      socket.close();
+    };
+  }, [gameId]);
 
-    },[gameId])
-
-
-    return {game, connectionState}
-
+  return { game, setGame, connectionState };
 }

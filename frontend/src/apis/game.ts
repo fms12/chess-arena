@@ -66,3 +66,20 @@ export async function acceptDrawApi(gameId: string, playerName: string,accept: b
   });
   return data;
 }
+export async function createComputerGameApi(
+  playerName: string,
+  playerColor: "white" | "black",
+  difficulty: "easy" | "medium" | "hard",
+) {
+  const { data } = await apiClient.post(`/games/computer`, {
+    player_name: playerName,
+    player_color: playerColor,
+    difficulty: difficulty,
+  });
+  return data;
+}
+
+export async function gameAnalysis(gameId: string) {
+  const { data } = await apiClient.post(`/games/${gameId}/analysis`);
+  return data;
+}

@@ -1,13 +1,53 @@
 import { useState } from "react";
 
+type IncomingDrawBannerProps = {
+  opponentOfferedDraw: boolean;
+  isGameActive: boolean;
+  onAcceptDraw: () => Promise<void>;
+  onDeclineDraw: () => Promise<void>;
+};
+
+export function IncomingDrawBanner({
+  opponentOfferedDraw,
+  isGameActive,
+  onAcceptDraw,
+  onDeclineDraw,
+}: IncomingDrawBannerProps) {
+  if (!opponentOfferedDraw || !isGameActive) return null;
+
+  return (
+    <div className="mt-3 bg-[#2d2820] border border-amber-500/40 p-3 rounded-xl flex flex-col gap-2">
+      <span className="text-xs text-center text-amber-200 font-semibold">
+        🤝 Opponent offered a draw. Accept?
+      </span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onAcceptDraw}
+          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
+        >
+          Accept Draw
+        </button>
+        <button
+          type="button"
+          onClick={onDeclineDraw}
+          className="flex-1 bg-[#3b3835] hover:bg-[#4a4642] text-stone-300 text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
+        >
+          Decline
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type GameControlsProps = {
   isGameActive: boolean;
   userOfferedDraw: boolean;
-  opponentOfferedDraw: boolean;
+  opponentOfferedDraw?: boolean;
   onOfferDraw: () => Promise<void>;
   onResign: () => Promise<void>;
-  onAcceptDraw: () => Promise<void>;
-  onDeclineDraw: () => Promise<void>;
+  onAcceptDraw?: () => Promise<void>;
+  onDeclineDraw?: () => Promise<void>;
 };
 
 export default function GameControls({
@@ -23,29 +63,14 @@ export default function GameControls({
 
   return (
     <div>
-      {/* Incoming Draw Request Banner */}
-      {opponentOfferedDraw && isGameActive && (
-        <div className="mb-3 bg-[#2d2820] border border-amber-500/40 p-3 rounded-xl flex flex-col gap-2">
-          <span className="text-xs text-center text-amber-200 font-semibold">
-            🤝 Opponent offered a draw. Accept?
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onAcceptDraw}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Accept Draw
-            </button>
-            <button
-              type="button"
-              onClick={onDeclineDraw}
-              className="flex-1 bg-[#3b3835] hover:bg-[#4a4642] text-stone-300 text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Decline
-            </button>
-          </div>
-        </div>
+      {/* If draw banner was passed directly to GameControls */}
+      {opponentOfferedDraw && isGameActive && onAcceptDraw && onDeclineDraw && (
+        <IncomingDrawBanner
+          opponentOfferedDraw={opponentOfferedDraw}
+          isGameActive={isGameActive}
+          onAcceptDraw={onAcceptDraw}
+          onDeclineDraw={onDeclineDraw}
+        />
       )}
 
       {/* Draw and Resign Action Bar */}
@@ -70,7 +95,7 @@ export default function GameControls({
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5 bg-[#331e1d] p-3.5 rounded-xl border border-red-900/60">
+            <div className="flex flex-col gap-2.5 bg-[#331e1d] p-3.5 rounded-xl border border-red-900/60 animate-fadeIn">
               <span className="text-xs text-center text-red-200 font-bold">
                 Are you sure you want to resign the game?
               </span>

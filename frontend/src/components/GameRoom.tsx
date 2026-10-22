@@ -1,6 +1,11 @@
 import { useState } from "react";
-import type { Game } from "../types/game";
+import type { Game, Player, GameAnalysis } from "../types/game";
 import { Chessboard } from "react-chessboard";
+import PlayerCard from "./game-room/PlayerCard";
+import MoveHistoryTable from "./game-room/MoveHistoryTable";
+import MatchInfoPanel from "./game-room/MatchInfoPanel";
+import GameControls, { IncomingDrawBanner } from "./game-room/GameControls";
+import AnalysisBanner from "./game-room/AnalysisBanner";
 
 type GameRoomProps = {
   game: Game;
@@ -11,6 +16,7 @@ type GameRoomProps = {
   onOfferDraw: () => Promise<void>;
   onAcceptDraw: () => Promise<void>;
   onDeclineDraw: () => Promise<void>;
+  onGameAnalysis: () => Promise<GameAnalysis>;
 };
 
 export default function GameRoom({
@@ -22,13 +28,61 @@ export default function GameRoom({
   onOfferDraw,
   onAcceptDraw,
   onDeclineDraw,
+  onGameAnalysis,
 }: GameRoomProps) {
-  const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"moves" | "info">("moves");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [analysisData, setAnalysisData] = useState<GameAnalysis | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
-  const localPlayer = game.players.find((player) => player.name === playerName);
-  const opponent = game.players.find((player) => player.name !== playerName);
+  // Safely derive players from either game.players or backend player name fields
+  const players: Player[] = game.players ?? [
+    ...(game.white_player_name
+      ? [{ name: game.white_player_name, color: "white" as const }]
+      : []),
+    ...(game.black_player_name
+      ? [{ name: game.black_player_name, color: "black" as const }]
+      : []),
+    ...(!game.white_player_name && game.bot_color === "white"
+      ? [
+          {
+            name: `Bot (${game.bot_difficulty ?? "AI"})`,
+            color: "white" as const,
+          },
+        ]
+      : []),
+    ...(!game.black_player_name && game.bot_color === "black"
+      ? [
+          {
+            name: `Bot (${game.bot_difficulty ?? "AI"})`,
+            color: "black" as const,
+          },
+        ]
+      : []),
+  ];
+
+  const localPlayer =
+    players.find((player) => player.name === playerName) ??
+    (game.white_player_name === playerName
+      ? { name: playerName, color: "white" as const }
+      : game.black_player_name === playerName
+        ? { name: playerName, color: "black" as const }
+        : game.bot_color
+          ? {
+              name:
+                playerName ||
+                (game.bot_color === "white"
+                  ? game.black_player_name
+                  : game.white_player_name) ||
+                "Player",
+              color:
+                game.bot_color === "white"
+                  ? ("black" as const)
+                  : ("white" as const),
+            }
+          : undefined);
+
+  const opponent = players.find((player) => player.name !== playerName);
 
   const isConnected = connectionState.toLowerCase() === "connected";
   const fenTurn = game.fen.split(" ")[1];
@@ -36,8 +90,11 @@ export default function GameRoom({
 
   // Disable moves if game is completed or it's not the player's turn
   const isGameActive = game.status === "active";
+  const isBotGame = Boolean(game.bot_color);
   const isMyTurn =
-    isGameActive && isConnected && localPlayer?.color === turnColor;
+    isGameActive &&
+    (isBotGame || isConnected) &&
+    localPlayer?.color === turnColor;
   const canMove = isMyTurn;
 
   // Draw offer state
@@ -45,22 +102,22 @@ export default function GameRoom({
     game.draw_offer !== null && game.draw_offer !== localPlayer?.color;
   const userOfferedDraw = game.draw_offer === localPlayer?.color;
 
-  // Format move history into standard chess pairs (e.g. 1. e4 e5)
-  const movePairs: { number: number; white: string; black?: string }[] = [];
-  for (let i = 0; i < game.moves.length; i += 2) {
-    movePairs.push({
-      number: Math.floor(i / 2) + 1,
-      white: game.moves[i].san,
-      black: game.moves[i + 1]?.san,
-    });
-  }
-
   async function handleCopyRoomLink() {
     const inviteUrl = new URL(window.location.href);
     inviteUrl.searchParams.set("gameId", game.id);
     await navigator.clipboard.writeText(inviteUrl.toString());
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
+  }
+
+  async function handleRunAnalysis() {
+    setIsLoadingAnalysis(true);
+    try {
+      const data = await onGameAnalysis();
+      setAnalysisData(data);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
   }
 
   // Determine game outcome text
@@ -137,55 +194,17 @@ export default function GameRoom({
       {/* Main Playing Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 w-full items-start justify-center">
-          {/* ========================================================= */}
-          {/* LEFT: BOARD & OPPONENT/PLAYER PROFILES                    */}
-          {/* ========================================================= */}
+          {/* LEFT: BOARD & OPPONENT/PLAYER PROFILES */}
           <div className="flex-1 w-full max-w-[560px] flex flex-col gap-3 mx-auto">
             {/* Opponent Profile Card (Top) */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                turnColor === opponent?.color && isGameActive
-                  ? "bg-[#262421] border-[#81b64c]/50 shadow-[0_0_12px_rgba(129,182,76,0.15)]"
-                  : "bg-[#262421] border-[#3d3935]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-[#211f1c] border border-[#3d3935] rounded-xl flex items-center justify-center font-bold text-white shadow-inner text-base">
-                  {opponent ? opponent.name.charAt(0).toUpperCase() : "?"}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-white leading-tight">
-                      {opponent?.name || "Waiting for opponent..."}
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-stone-400">
-                      1500
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-stone-400">
-                      {opponent?.color === "white"
-                        ? "Playing White ♔"
-                        : "Playing Black ♚"}
-                    </span>
-                    {turnColor === opponent?.color && isGameActive && (
-                      <span className="text-[10px] font-bold text-[#81b64c] bg-[#81b64c]/10 px-1.5 py-0.5 rounded animate-pulse">
-                        Thinking...
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Opponent Status Indicator */}
-              <div className="text-right">
-                <div className="text-xs font-mono font-bold text-stone-300 bg-[#1e1c1a] px-3 py-1.5 rounded-lg border border-[#3d3935]">
-                  {turnColor === opponent?.color && isGameActive
-                    ? "Active"
-                    : "Ready"}
-                </div>
-              </div>
-            </div>
+            <PlayerCard
+              name={opponent?.name}
+              color={opponent?.color}
+              isTurn={turnColor === opponent?.color}
+              isGameActive={isGameActive}
+              isLocalPlayer={false}
+              waitingMessage="Waiting for opponent..."
+            />
 
             {/* Chessboard Card */}
             <div className="rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.6)] border-2 border-[#3d3935] relative bg-[#262421] p-1.5">
@@ -219,73 +238,40 @@ export default function GameRoom({
                     position: game.fen,
                     boardOrientation: localPlayer?.color ?? "white",
                     allowDragging: canMove,
+                    animationDurationInMs: 300,
                     darkSquareStyle: { backgroundColor: "#739552" },
                     lightSquareStyle: { backgroundColor: "#ebecd0" },
                     onPieceDrop: ({ sourceSquare, targetSquare }) => {
                       if (!sourceSquare || !targetSquare) return false;
+                      setAnalysisData(null);
                       void onMove(sourceSquare, targetSquare);
                       return false;
                     },
+                    arrows: analysisData?.best_move
+                      ? [
+                          {
+                            startSquare: analysisData.best_move.slice(0, 2),
+                            endSquare: analysisData.best_move.slice(2, 4),
+                            color: "rgb(129, 182, 76)", // or "#81b64c"
+                          },
+                        ]
+                      : [],
                   }}
                 />
               </div>
             </div>
 
             {/* Local Player Profile Card (Bottom) */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                isMyTurn
-                  ? "bg-[#262421] border-[#81b64c] shadow-[0_0_15px_rgba(129,182,76,0.25)]"
-                  : "bg-[#262421] border-[#3d3935]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-gradient-to-br from-[#81b64c]/30 to-[#608b35]/20 border border-[#81b64c]/40 rounded-xl flex items-center justify-center font-bold text-[#81b64c] shadow-inner text-base">
-                  {localPlayer?.name?.charAt(0).toUpperCase() ||
-                    playerName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-white leading-tight">
-                      {localPlayer?.name || playerName} (You)
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-stone-400">
-                      1500
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-stone-400">
-                      {localPlayer?.color === "white"
-                        ? "Playing White ♔"
-                        : "Playing Black ♚"}
-                    </span>
-                    {isMyTurn && (
-                      <span className="text-[10px] font-bold text-[#81b64c] bg-[#81b64c]/15 px-2 py-0.5 rounded border border-[#81b64c]/30">
-                        Your Turn!
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Local Player Status Pill */}
-              <div className="text-right">
-                <div
-                  className={`text-xs font-mono font-bold px-3 py-1.5 rounded-lg border ${
-                    isMyTurn
-                      ? "bg-[#81b64c] text-white border-[#81b64c] shadow-md"
-                      : "bg-[#1e1c1a] text-stone-300 border-[#3d3935]"
-                  }`}
-                >
-                  {isMyTurn ? "Your Move" : "Waiting"}
-                </div>
-              </div>
-            </div>
+            <PlayerCard
+              name={localPlayer?.name || playerName}
+              color={localPlayer?.color}
+              isTurn={isMyTurn}
+              isGameActive={isGameActive}
+              isLocalPlayer={true}
+            />
           </div>
 
-          {/* ========================================================= */}
-          {/* RIGHT: GAME CONTROLS & MOVE HISTORY SIDEBAR               */}
-          {/* ========================================================= */}
+          {/* RIGHT: GAME CONTROLS & MOVE HISTORY SIDEBAR */}
           <div className="w-full lg:w-88 flex flex-col gap-4">
             <div className="bg-[#262421] rounded-2xl shadow-2xl border border-[#3d3935] overflow-hidden flex flex-col min-h-[500px]">
               {/* Sidebar Header Tabs */}
@@ -353,175 +339,36 @@ export default function GameRoom({
                 )}
 
                 {/* Incoming Draw Controls */}
-                {opponentOfferedDraw && isGameActive && (
-                  <div className="mt-3 bg-[#2d2820] border border-amber-500/40 p-3 rounded-xl flex flex-col gap-2">
-                    <span className="text-xs text-center text-amber-200 font-semibold">
-                      🤝 Opponent offered a draw. Accept?
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={onAcceptDraw}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Accept Draw
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onDeclineDraw}
-                        className="flex-1 bg-[#3b3835] hover:bg-[#4a4642] text-stone-300 text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <IncomingDrawBanner
+                  opponentOfferedDraw={opponentOfferedDraw}
+                  isGameActive={isGameActive}
+                  onAcceptDraw={onAcceptDraw}
+                  onDeclineDraw={onDeclineDraw}
+                />
+               <AnalysisBanner
+                    analysisData={analysisData}
+                    onAnalyze={handleRunAnalysis}
+                    isLoading={isLoadingAnalysis}
+                    onClear={() => setAnalysisData(null)}
+                  
+                  />
               </div>
 
               {/* Tab 1: Standard Chess Notation Move History */}
-              {activeTab === "moves" && (
-                <div className="flex-1 flex flex-col min-h-[240px] max-h-[360px] overflow-hidden">
-                  <div className="grid grid-cols-12 px-4 py-2 bg-[#211f1c] text-[10px] font-bold uppercase tracking-wider text-stone-500 border-b border-[#3d3935]">
-                    <span className="col-span-2">#</span>
-                    <span className="col-span-5">White</span>
-                    <span className="col-span-5">Black</span>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto divide-y divide-[#3d3935]/40 font-mono text-xs">
-                    {movePairs.map((pair, idx) => {
-                      const isLatest = idx === movePairs.length - 1;
-                      return (
-                        <div
-                          key={pair.number}
-                          className={`grid grid-cols-12 px-4 py-2 hover:bg-[#2c2926] transition-colors ${
-                            isLatest
-                              ? "bg-[#81b64c]/10 text-white font-bold"
-                              : "text-stone-300"
-                          }`}
-                        >
-                          <span className="col-span-2 text-stone-500 font-sans">
-                            {pair.number}.
-                          </span>
-                          <span className="col-span-5 tracking-wide">
-                            {pair.white}
-                          </span>
-                          <span className="col-span-5 tracking-wide">
-                            {pair.black || ""}
-                          </span>
-                        </div>
-                      );
-                    })}
-
-                    {movePairs.length === 0 && (
-                      <div className="h-full min-h-[200px] flex flex-col items-center justify-center p-6 text-center text-stone-500 font-sans">
-                        <span className="text-3xl mb-2 opacity-40">♟</span>
-                        <p className="text-xs font-medium">Game in progress</p>
-                        <p className="text-[11px] text-stone-600 mt-0.5">
-                          White makes the opening move
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {activeTab === "moves" && <MoveHistoryTable moves={game.moves} />}
 
               {/* Tab 2: Match Information */}
               {activeTab === "info" && (
-                <div className="flex-1 p-4 space-y-3 font-sans text-xs">
-                  <div className="bg-[#1e1c1a] p-3 rounded-xl border border-[#3d3935] space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400">Match ID:</span>
-                      <span className="font-mono text-white font-bold">
-                        {game.id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400">Status:</span>
-                      <span className="capitalize font-bold text-[#81b64c]">
-                        {game.status}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400">Total Moves:</span>
-                      <span className="font-bold text-white">
-                        {game.moves.length}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#1e1c1a] p-3 rounded-xl border border-[#3d3935] space-y-1.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-                      Participants
-                    </div>
-                    {game.players.map((p) => (
-                      <div
-                        key={p.name}
-                        className="flex justify-between items-center py-1 text-xs"
-                      >
-                        <span className="font-medium text-white flex items-center gap-1.5">
-                          <span>{p.color === "white" ? "♔" : "♚"}</span>
-                          <span>{p.name}</span>
-                          {p.name === playerName && (
-                            <span className="text-[10px] text-[#81b64c]">
-                              (You)
-                            </span>
-                          )}
-                        </span>
-                        <span className="capitalize text-stone-400 text-[11px]">
-                          {p.color}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <MatchInfoPanel game={game} playerName={playerName} />
               )}
 
               {/* Game Action Controls (Resign & Draw) */}
-              {isGameActive && (
-                <div className="p-4 border-t border-[#3d3935] bg-[#211f1c]">
-                  {!showResignConfirm ? (
-                    <div className="flex gap-2.5">
-                      <button
-                        type="button"
-                        onClick={onOfferDraw}
-                        disabled={userOfferedDraw}
-                        className="flex-1 bg-[#36322d] hover:bg-[#45413b] disabled:opacity-50 text-stone-200 font-bold py-2.5 rounded-xl text-xs transition-colors border border-[#4d4842] shadow-sm cursor-pointer"
-                      >
-                        {userOfferedDraw ? "Draw Offered 🤝" : "Offer Draw 🤝"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowResignConfirm(true)}
-                        className="flex-1 bg-[#4a2624] hover:bg-[#5c2f2d] text-red-200 font-bold py-2.5 rounded-xl text-xs transition-colors border border-red-900/60 shadow-sm cursor-pointer"
-                      >
-                        Resign 🏳️
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2.5 bg-[#331e1d] p-3.5 rounded-xl border border-red-900/60 animate-fadeIn">
-                      <span className="text-xs text-center text-red-200 font-bold">
-                        Are you sure you want to resign the game?
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={onResign}
-                          className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-lg text-xs transition-colors shadow cursor-pointer"
-                        >
-                          Yes, Resign
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowResignConfirm(false)}
-                          className="flex-1 bg-[#3b3835] hover:bg-[#4a4642] text-stone-300 font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <GameControls
+                isGameActive={isGameActive}
+                userOfferedDraw={userOfferedDraw}
+                onOfferDraw={onOfferDraw}
+                onResign={onResign}
+              />
             </div>
           </div>
         </div>

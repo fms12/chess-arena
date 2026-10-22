@@ -1,25 +1,31 @@
-import { useState } from "react";
-import { BOTS, type BotProfile, type BotConfig } from "./types";
+import { BOTS, type BotProfile } from "./types";
+import { ColorSelector } from "./ColorSelector";
 
 type BotModePanelProps = {
   selectedBotId: string;
   onSelectBotId: (id: string) => void;
   playerColor: "white" | "random" | "black";
   onSelectPlayerColor: (color: "white" | "random" | "black") => void;
-  onStartBotGame?: (config: BotConfig) => void;
+  botGameType: "friendly" | "challenge";
+  onSelectBotGameType: (type: "friendly" | "challenge") => void;
+  botFilterTier: string;
+  onSelectBotFilterTier: (tier: string) => void;
+  onStartBot: () => void;
+  botStartedToast: boolean;
 };
 
-export default function BotModePanel({
+export function BotModePanel({
   selectedBotId,
   onSelectBotId,
   playerColor,
   onSelectPlayerColor,
-  onStartBotGame,
+  botGameType,
+  onSelectBotGameType,
+  botFilterTier,
+  onSelectBotFilterTier,
+  onStartBot,
+  botStartedToast,
 }: BotModePanelProps) {
-  const [botFilterTier, setBotFilterTier] = useState<string>("all");
-  const [botGameType, setBotGameType] = useState<"friendly" | "challenge">("friendly");
-  const [botNotification, setBotNotification] = useState<string | null>(null);
-
   const selectedBot = BOTS.find((b) => b.id === selectedBotId) ?? BOTS[0];
 
   const filteredBots: BotProfile[] =
@@ -27,49 +33,34 @@ export default function BotModePanel({
       ? BOTS
       : BOTS.filter((b) => b.tier.toLowerCase() === botFilterTier.toLowerCase());
 
-  function handleStartBot() {
-    if (onStartBotGame) {
-      onStartBotGame({
-        bot: selectedBot,
-        playerColor,
-        gameType: botGameType,
-      });
-    } else {
-      setBotNotification(`Match configured with ${selectedBot.name} (${selectedBot.rating})!`);
-      setTimeout(() => setBotNotification(null), 3000);
-    }
-  }
-
   return (
-    <div className="space-y-5 transition-all duration-200">
-      {/* Bot Tier Filters */}
+    <div className="space-y-6 animate-fadeIn">
+      {/* Bot Filter Tiers */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8c8883]">
-            Choose Opponent Bot
+          <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
+            Choose Bot Personality
           </span>
-          <div className="flex gap-1 bg-[#1e1c1a] p-0.5 rounded-lg border border-[#3d3935]">
-            {(["all", "beginner", "intermediate", "advanced", "master"] as const).map(
-              (tier) => (
-                <button
-                  key={tier}
-                  type="button"
-                  onClick={() => setBotFilterTier(tier)}
-                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
-                    botFilterTier === tier
-                      ? "bg-[#36322d] text-white"
-                      : "text-[#8c8883] hover:text-white"
-                  }`}
-                >
-                  {tier}
-                </button>
-              )
-            )}
+          <div className="flex gap-1">
+            {["all", "beginner", "intermediate", "advanced"].map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => onSelectBotFilterTier(tier)}
+                className={`text-[11px] font-semibold capitalize px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                  botFilterTier === tier
+                    ? "bg-[#36322d] text-white border border-stone-500/50"
+                    : "text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                {tier}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Bot Cards Grid */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {filteredBots.map((bot) => {
             const isSelected = selectedBotId === bot.id;
             return (
@@ -77,152 +68,118 @@ export default function BotModePanel({
                 key={bot.id}
                 type="button"
                 onClick={() => onSelectBotId(bot.id)}
-                className={`flex flex-col items-center text-center p-2.5 rounded-xl border transition-all cursor-pointer relative ${
+                className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all cursor-pointer relative ${
                   isSelected
-                    ? "bg-[#36322d] border-[#81b64c] shadow-[0_0_12px_rgba(129,182,76,0.25)]"
-                    : "bg-[#1e1c1a] border-[#3d3935] hover:border-stone-500 hover:bg-[#22201d]"
+                    ? "bg-[#36322d] border-[#81b64c] shadow-[0_0_12px_rgba(129,182,76,0.2)]"
+                    : "bg-[#1e1c1a] border-[#36322d] hover:border-stone-500 hover:bg-[#22201d]"
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-[#262421] border border-[#3d3935] flex items-center justify-center text-xl mb-1 shadow-inner">
+                <div className="w-12 h-12 rounded-full bg-[#262421] border border-[#3b3836] flex items-center justify-center text-2xl mb-1.5 shadow-inner">
                   {bot.avatar}
                 </div>
-                <div className="font-bold text-xs text-white leading-tight">
+                <div className="font-bold text-sm text-white leading-tight">
                   {bot.name}
                 </div>
-                <span
-                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border mt-1 ${bot.badgeStyle}`}
-                >
-                  {bot.rating}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded border ${bot.colorTheme}`}
+                  >
+                    {bot.rating}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Selected Bot Spotlight Bio */}
-      <div className="bg-[#1e1c1a] border border-[#3d3935] rounded-xl p-3.5 flex gap-3.5 items-start">
-        <div className="w-12 h-12 rounded-xl bg-[#262421] border border-[#3d3935] flex items-center justify-center text-2xl shadow-inner shrink-0">
+      {/* Selected Bot Spotlight / Bio Card */}
+      <div className="bg-[#1e1c1a] border border-[#3b3836] rounded-xl p-4 flex gap-4 items-start">
+        <div className="w-14 h-14 rounded-2xl bg-[#262421] border border-[#44403c] flex items-center justify-center text-3xl shadow-md shrink-0">
           {selectedBot.avatar}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h4 className="font-bold text-white text-sm">{selectedBot.name}</h4>
-              <span className="text-[10px] text-[#8c8883]">
-                • {selectedBot.tagline}
-              </span>
-            </div>
+            <h3 className="font-bold text-white text-base">
+              {selectedBot.name}
+            </h3>
             <span
-              className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${selectedBot.badgeStyle}`}
+              className={`text-xs font-bold px-2 py-0.5 rounded border ${selectedBot.colorTheme}`}
             >
-              {selectedBot.rating}
+              Rating {selectedBot.rating}
             </span>
           </div>
-          <p className="text-[11px] text-stone-300 mt-1 leading-snug">
+          <p className="text-xs text-stone-300 mt-1 leading-relaxed">
             {selectedBot.description}
           </p>
-          <blockquote className="mt-2 text-[10px] text-[#81b64c] italic bg-[#262421] px-2 py-1 rounded border-l-2 border-[#81b64c]">
+          <blockquote className="mt-2 text-[11px] text-[#81b64c] italic bg-[#262421]/60 px-2.5 py-1 rounded border-l-2 border-[#81b64c]">
             "{selectedBot.quote}"
           </blockquote>
         </div>
       </div>
 
-      {/* Assistance Mode & Color Selection */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Game Assistance */}
-        <div>
-          <span className="block text-[11px] font-bold uppercase tracking-wider text-[#8c8883] mb-1.5">
-            Assistance Mode
-          </span>
-          <div className="grid grid-cols-2 gap-1.5 bg-[#1e1c1a] p-1 rounded-xl border border-[#3d3935]">
-            <button
-              type="button"
-              onClick={() => setBotGameType("friendly")}
-              title="Hints and takebacks enabled"
-              className={`text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer ${
-                botGameType === "friendly"
-                  ? "bg-[#36322d] text-white shadow-sm"
-                  : "text-[#8c8883] hover:text-white"
-              }`}
-            >
-              Friendly 💡
-            </button>
-            <button
-              type="button"
-              onClick={() => setBotGameType("challenge")}
-              title="Strict rules, no takebacks"
-              className={`text-xs font-bold py-2 rounded-lg transition-colors cursor-pointer ${
-                botGameType === "challenge"
-                  ? "bg-[#36322d] text-white shadow-sm"
-                  : "text-[#8c8883] hover:text-white"
-              }`}
-            >
-              Challenge ⚔️
-            </button>
-          </div>
-        </div>
+      {/* Bot Play Color Selection */}
+      <ColorSelector
+        selectedColor={playerColor}
+        onChange={onSelectPlayerColor}
+      />
 
-        {/* Color Preference */}
-        <div>
-          <span className="block text-[11px] font-bold uppercase tracking-wider text-[#8c8883] mb-1.5">
-            Play Color
-          </span>
-          <div className="grid grid-cols-3 gap-1 bg-[#1e1c1a] p-1 rounded-xl border border-[#3d3935]">
-            <button
-              type="button"
-              onClick={() => onSelectPlayerColor("white")}
-              title="Play as White"
-              className={`flex flex-col items-center justify-center py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                playerColor === "white"
-                  ? "bg-[#36322d] text-white shadow-sm border border-[#81b64c]"
-                  : "text-[#8c8883] hover:text-white"
-              }`}
-            >
-              <span className="text-base leading-none">♔</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPlayerColor("random")}
-              title="Play as Random"
-              className={`flex flex-col items-center justify-center py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                playerColor === "random"
-                  ? "bg-[#36322d] text-white shadow-sm border border-[#81b64c]"
-                  : "text-[#8c8883] hover:text-white"
-              }`}
-            >
-              <span className="text-base leading-none">☯</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPlayerColor("black")}
-              title="Play as Black"
-              className={`flex flex-col items-center justify-center py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                playerColor === "black"
-                  ? "bg-[#36322d] text-white shadow-sm border border-[#81b64c]"
-                  : "text-[#8c8883] hover:text-white"
-              }`}
-            >
-              <span className="text-base leading-none">♚</span>
-            </button>
-          </div>
+      {/* Bot Game Type (Assistance mode) */}
+      <div>
+        <label className="block text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">
+          Assistance Mode
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onSelectBotGameType("friendly")}
+            className={`flex flex-col items-start p-3 rounded-xl border transition-all cursor-pointer ${
+              botGameType === "friendly"
+                ? "bg-[#36322d] border-[#81b64c] text-white"
+                : "bg-[#1e1c1a] border-[#36322d] text-stone-400 hover:text-stone-200"
+            }`}
+          >
+            <span className="font-bold text-xs flex items-center gap-1.5">
+              <span>💡</span> Friendly Mode
+            </span>
+            <span className="text-[11px] text-stone-400 mt-0.5">
+              Hints and takebacks enabled
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSelectBotGameType("challenge")}
+            className={`flex flex-col items-start p-3 rounded-xl border transition-all cursor-pointer ${
+              botGameType === "challenge"
+                ? "bg-[#36322d] border-[#81b64c] text-white"
+                : "bg-[#1e1c1a] border-[#36322d] text-stone-400 hover:text-stone-200"
+            }`}
+          >
+            <span className="font-bold text-xs flex items-center gap-1.5">
+              <span>⚔️</span> Challenge Mode
+            </span>
+            <span className="text-[11px] text-stone-400 mt-0.5">
+              Strict rules, no takebacks
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Primary Bot Action: 3D Beveled Green Button */}
+      {/* Primary Bot Action: Start Bot Match Button (Chess.com Green Button) */}
       <div className="pt-2">
         <button
           type="button"
-          onClick={handleStartBot}
+          onClick={onStartBot}
           className="w-full cursor-pointer py-4 px-6 rounded-xl font-extrabold text-base tracking-wide uppercase text-white bg-[#81b64c] hover:bg-[#95c954] active:bg-[#6c9d3d] shadow-[0_4px_0_0_#457524] active:shadow-[0_1px_0_0_#457524] active:translate-y-[3px] transition-all flex items-center justify-center gap-3"
         >
           <span>Play vs {selectedBot.name}</span>
-          <span className="text-lg">🤖</span>
+          <span className="text-xl">🤖</span>
         </button>
 
-        {botNotification && (
-          <div className="mt-3 p-2.5 bg-[#36322d] border border-[#81b64c]/40 rounded-xl text-center text-xs text-[#81b64c] font-bold">
-            {botNotification}
+        {botStartedToast && (
+          <div className="mt-3 p-3 bg-[#36322d] border border-[#81b64c]/40 rounded-xl text-center text-xs text-[#81b64c] font-semibold animate-pulse">
+            Bot match configured for {selectedBot.name} ({selectedBot.rating}) • Ready for bot engine
           </div>
         )}
       </div>

@@ -15,7 +15,6 @@ async def chessGameAnalysis(
     session: Session = Depends(get_session)
 ):
     game = getGameById(session, game_id)
-
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 

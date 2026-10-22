@@ -82,7 +82,7 @@ export default function PlayerCard({
               : "bg-[#1e1c1a] text-stone-300 border-[#3d3935]"
           }`}
         >
-          {isTurn && isGameActive ? (isLocalPlayer ? "Your Move" : "Active") : "Ready"}
+          {isTurn && isGameActive ? (isLocalPlayer ? "Your Move" : "Active") : isLocalPlayer ? "Waiting" : "Ready"}
         </div>
       </div>
     </div>

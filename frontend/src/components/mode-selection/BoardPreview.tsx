@@ -36,7 +36,7 @@ export default function BoardPreview({
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
                   activeMode === "online"
                     ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                    : selectedBot.badgeStyle
+                    : selectedBot.badgeStyle ?? selectedBot.colorTheme
                 }`}
               >
                 {activeMode === "online" ? "~1500" : selectedBot.rating}
@@ -44,8 +44,8 @@ export default function BoardPreview({
             </div>
             <span className="text-[11px] text-[#8c8883]">
               {activeMode === "online"
-                ? `${activeTc.name} • ${activeTc.sublabel} Match`
-                : `${selectedBot.tagline} • ${selectedBot.tier}`}
+                ? `${activeTc.name} • ${activeTc.sublabel ?? activeTc.time} Match`
+                : `${selectedBot.tagline ?? selectedBot.tier} • ${selectedBot.tier}`}
             </span>
           </div>
         </div>
