@@ -10,6 +10,7 @@ dependencies = [
     "psycopg[binary]>=3.3.5",
     "pydantic-settings>=2.15.0",
     "python-chess>=1.999",
+    "redis>=8.1.0",
     "sqlmodel>=0.0.42",
 ]
 

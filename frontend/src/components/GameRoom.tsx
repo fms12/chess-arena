@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Game, Player, GameAnalysis } from "../types/game";
 import { Chessboard } from "react-chessboard";
 import PlayerCard from "./game-room/PlayerCard";
@@ -16,7 +16,9 @@ type GameRoomProps = {
   onOfferDraw: () => Promise<void>;
   onAcceptDraw: () => Promise<void>;
   onDeclineDraw: () => Promise<void>;
-  onGameAnalysis: () => Promise<GameAnalysis>;
+  onGameAnalysis: () => Promise<void>;
+  analysisData: GameAnalysis | null;
+  setAnalysisData: (value: GameAnalysis | null) => void;
 };
 
 export default function GameRoom({
@@ -29,10 +31,12 @@ export default function GameRoom({
   onAcceptDraw,
   onDeclineDraw,
   onGameAnalysis,
+  analysisData,
+  setAnalysisData
 }: GameRoomProps) {
   const [activeTab, setActiveTab] = useState<"moves" | "info">("moves");
   const [copiedLink, setCopiedLink] = useState(false);
-  const [analysisData, setAnalysisData] = useState<GameAnalysis | null>(null);
+  // const [analysisData, setAnalysisData] = useState<GameAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
   // Safely derive players from either game.players or backend player name fields
@@ -113,12 +117,17 @@ export default function GameRoom({
   async function handleRunAnalysis() {
     setIsLoadingAnalysis(true);
     try {
-      const data = await onGameAnalysis();
-      setAnalysisData(data);
-    } finally {
+      await onGameAnalysis();
+    } catch {
       setIsLoadingAnalysis(false);
     }
   }
+
+  useEffect(() => {
+    if (analysisData) {
+      setIsLoadingAnalysis(false);
+    }
+  }, [analysisData]);
 
   // Determine game outcome text
   function getOutcomeText() {

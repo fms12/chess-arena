@@ -5,11 +5,13 @@ from app.core.db import get_session
 from app.crud.game import getGameById
 from app.schema.game import AnalysisGameRead 
 import uuid
+import json
 import chess
+from app.core.redis import async_client
 
 router = APIRouter(tags=["Analysis"])
 
-@router.post("/games/{game_id}/analysis", response_model=AnalysisGameRead )
+@router.post("/games/{game_id}/analysis", response_model=None )
 async def chessGameAnalysis(
     game_id: uuid.UUID,
     session: Session = Depends(get_session)
@@ -30,14 +32,21 @@ async def chessGameAnalysis(
 
     # 503: Stockfish startup or process failure
     try:
-        analysisGameData = chessEngine(game.fen)
+        # analysisGameData = chessEngine(game.fen)
+        payload = {"gameId" :str(game_id), "fen": game.fen}
+        await async_client.rpush("analysis_queue", json.dumps(payload))
     except (FileNotFoundError, chess.engine.EngineError):
         raise HTTPException(
             status_code=503,
             detail="Chess analysis service unavailable"
         )
+    
 
-    return analysisGameData
+    return {"status": "queued", "message": "Analysis in progress"}
+
+  
+
+  
 
 
     

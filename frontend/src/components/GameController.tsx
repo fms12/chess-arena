@@ -18,7 +18,7 @@ export function GameController() {
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState("");
 
-  const { game, setGame, connectionState } = useGameSocket(gameId);
+  const { game, setGame, connectionState , analysisData, setAnalysisData } = useGameSocket(gameId);
 
   async function handleCreateGame() {
     const effectivePlayerName =
@@ -93,9 +93,7 @@ export function GameController() {
 
   async function handleGameAnalysis() {
     if(!gameId) return
-    const analysisData = await  gameAnalysis(gameId);
-    console.log(analysisData)
-    return analysisData  
+    await  gameAnalysis(gameId);
   }
 
   async function handleCreateComputerGame(config: BotConfig) {
@@ -153,7 +151,9 @@ export function GameController() {
       onOfferDraw={handleOfferDraw}
       onAcceptDraw={handleAcceptDraw}
       onDeclineDraw={handleDeclineDraw}
-      onGameAnalysis = {handleGameAnalysis}
+      onGameAnalysis={handleGameAnalysis}
+      analysisData={analysisData}
+      setAnalysisData={setAnalysisData}
     />
   );
 }

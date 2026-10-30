@@ -49,4 +49,4 @@ async def game_websocket(
     except WebSocketDisconnect:
         pass
     finally:
-        manager.disconnect(game_id, websocket)
+        await manager.disconnect(game_id, websocket)
