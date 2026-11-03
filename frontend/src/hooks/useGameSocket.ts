@@ -8,8 +8,17 @@ export function useGameSocket(gameId: string | null) {
   const [connectionState, setConnectionState] = useState<
     "idle" | "connecting" | "connected" | "error"
   >("idle");
-  const [analysisData, setAnalysisData] = useState<GameAnalysis | null>(null);
 
+   function getSessionId(): string {
+     let id = sessionStorage.getItem("chess_session_id");
+     if (!id) {
+       id = crypto.randomUUID();
+       sessionStorage.setItem("chess_session_id", id);
+     }
+     return id;
+   }
+  const [analysisData, setAnalysisData] = useState<GameAnalysis | null>(null);
+  const [sessionId] = useState<string>(() => getSessionId());
   const [game, setGame] = useState<Game | null>(null);
 
   useEffect(() => {
@@ -19,9 +28,13 @@ export function useGameSocket(gameId: string | null) {
       return;
     }
 
+ 
+
     setConnectionState("connecting");
 
-    const socket = new WebSocket(`${apiUrl}/games/${gameId}/ws`);
+    const socket = new WebSocket(
+      `${apiUrl}/games/${gameId}/ws?session_id=${sessionId}`,
+    );
 
     socket.onopen = () => {
       setConnectionState("connected");
@@ -54,5 +67,12 @@ export function useGameSocket(gameId: string | null) {
     };
   }, [gameId]);
 
-  return { game, setGame, connectionState, analysisData, setAnalysisData };
+  return {
+    game,
+    setGame,
+    connectionState,
+    analysisData,
+    setAnalysisData,
+    sessionId,
+  };
 }

@@ -75,3 +75,6 @@ class ComputerGameRequest(BaseModel):
         player_name: str
         player_color: Literal["white", "black"]
         difficulty: Literal["easy", "medium", "hard"]
+        
+class AnalysisRequest(BaseModel):
+    session_id: str

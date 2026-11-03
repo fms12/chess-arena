@@ -14,6 +14,7 @@ router = APIRouter(tags=["WebSocket"])
 async def game_websocket(
     websocket: WebSocket, 
     game_id: uuid.UUID, 
+    session_id: str,
     session: Session = Depends(get_session)
 ):
     # 1. Load Game and moves from PostgreSQL via CRUD
@@ -33,7 +34,7 @@ async def game_websocket(
     game_read_data = serializeGame(game)
 
     # 3. Connect via the existing manager (which handles adding to broadcasts)
-    await manager.connect(game_id, websocket)
+    await manager.connect(game_id, session_id, websocket)
     
     # Send initial state using the serialized GameRead model
     await websocket.send_json({
@@ -49,4 +50,4 @@ async def game_websocket(
     except WebSocketDisconnect:
         pass
     finally:
-        await manager.disconnect(game_id, websocket)
+        await manager.disconnect(game_id, session_id, websocket)

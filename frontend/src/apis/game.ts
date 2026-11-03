@@ -79,7 +79,9 @@ export async function createComputerGameApi(
   return data;
 }
 
-export async function gameAnalysis(gameId: string) {
-  const { data } = await apiClient.post(`/games/${gameId}/analysis`);
+export async function gameAnalysis(gameId: string,sessionId: string) {
+  const { data } = await apiClient.post(`/games/${gameId}/analysis`,{
+    session_id: sessionId || "",
+  });
   return data;
 }

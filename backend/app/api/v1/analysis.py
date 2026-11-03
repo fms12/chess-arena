@@ -3,7 +3,7 @@ from app.services.engine import chessEngine
 from sqlmodel import Session
 from app.core.db import get_session
 from app.crud.game import getGameById
-from app.schema.game import AnalysisGameRead 
+from app.schema.game import AnalysisGameRead,AnalysisRequest
 import uuid
 import json
 import chess
@@ -14,6 +14,7 @@ router = APIRouter(tags=["Analysis"])
 @router.post("/games/{game_id}/analysis", response_model=None )
 async def chessGameAnalysis(
     game_id: uuid.UUID,
+    analysis_request: AnalysisRequest,
     session: Session = Depends(get_session)
 ):
     game = getGameById(session, game_id)
@@ -33,7 +34,7 @@ async def chessGameAnalysis(
     # 503: Stockfish startup or process failure
     try:
         # analysisGameData = chessEngine(game.fen)
-        payload = {"gameId" :str(game_id), "fen": game.fen}
+        payload = {"gameId" :str(game_id), "fen": game.fen, "sessionId": analysis_request.session_id}
         await async_client.rpush("analysis_queue", json.dumps(payload))
     except (FileNotFoundError, chess.engine.EngineError):
         raise HTTPException(
