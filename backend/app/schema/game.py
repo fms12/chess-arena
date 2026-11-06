@@ -78,3 +78,7 @@ class ComputerGameRequest(BaseModel):
         
 class AnalysisRequest(BaseModel):
     session_id: str
+    
+class MatchmakingRequest(BaseModel):
+    player_name: str
+    session_id: str

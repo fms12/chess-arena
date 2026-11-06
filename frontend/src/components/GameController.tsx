@@ -6,19 +6,22 @@ import type { BotConfig } from "./GameModeSelection";
 import {
   acceptDrawApi,
   createComputerGameApi,
-  createGameApi,
   joinGameApi,
   offerDrawApi,
   resignGameApi,
   submitMoveApi,
   gameAnalysis,
+  joinMatchmakingApi,
+  cancelMatchmakingApi
 } from "../apis/game";
 
 export function GameController() {
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
 
-  const { game, setGame, connectionState , analysisData, setAnalysisData,sessionId } = useGameSocket(gameId);
+  const { game, setGame, connectionState , analysisData, setAnalysisData, sessionId } = useGameSocket(gameId);
 
   async function handleCreateGame() {
     const effectivePlayerName =
@@ -26,11 +29,27 @@ export function GameController() {
     if (!playerName.trim()) {
       setPlayerName(effectivePlayerName);
     }
-    const createdGame = await createGameApi();
-    const joinedGame = await joinGameApi(createdGame.id, effectivePlayerName);
-    setGame(joinedGame ?? createdGame);
-    setGameId(createdGame.id);
-    updateGameUrl(createdGame.id);
+    setIsSearching(true);
+    try{
+      const result = await joinMatchmakingApi(effectivePlayerName, sessionId);
+      if(result.status ==="matched"){
+        setGame(result.game);
+        setGameId(result.game.id);
+        // updateGameUrl(result.game.id);
+        setPlayerColor(result.color);
+        
+      }
+    } catch (error) {
+      console.error("Error joining matchmaking:", error);
+    } finally {
+      setIsSearching(false);  
+    }
+
+    // const createdGame = await createGameApi();
+    // const joinedGame = await joinGameApi(createdGame.id, effectivePlayerName);
+    // setGame(joinedGame ?? createdGame);
+    // setGameId(createdGame.id);
+    // updateGameUrl(createdGame.id);
   }
 
   function updateGameUrl(gameId: string) {
@@ -123,6 +142,16 @@ export function GameController() {
     setGame(createdGame);
     setGameId(createdGame.id);
     updateGameUrl(createdGame.id);
+    setPlayerColor(resolvedColor);
+  }
+
+  async function handleCancelSearch() {
+    setIsSearching(false);
+    try {
+      await cancelMatchmakingApi(playerName, sessionId);
+    } catch (error) {
+      console.error("Error cancelling matchmaking:", error);
+    }
   }
 
 
@@ -136,7 +165,10 @@ export function GameController() {
         onCreateGame={handleCreateGame}
         onJoinGame={handleJoinGame}
         onCreateComputerGame={handleCreateComputerGame}
+        isSearching={isSearching}
+        handleCancelSearch={handleCancelSearch}
       />
+      
     );
   }
 
@@ -154,6 +186,7 @@ export function GameController() {
       onGameAnalysis={handleGameAnalysis}
       analysisData={analysisData}
       setAnalysisData={setAnalysisData}
+      playerColor={playerColor}
     />
   );
 }

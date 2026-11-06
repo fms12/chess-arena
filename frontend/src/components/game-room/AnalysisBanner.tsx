@@ -7,7 +7,7 @@ type AnalysisBannerProps = {
   onClear?: () => void;
 };
 
-function AnalysisBanner({
+function  AnalysisBanner({
   analysisData,
   onAnalyze,
   isLoading = false,

@@ -25,6 +25,8 @@ export type LobbyProps = {
   onCreateGame: () => Promise<void> | void;
   onJoinGame: (gameId: string) => Promise<void> | void;
   onCreateComputerGame: (config: BotConfig) => void | Promise<void>;
+  isSearching?: boolean;
+  handleCancelSearch?: () => void;
 };
 
 export default function Lobby({
@@ -33,12 +35,13 @@ export default function Lobby({
   onCreateGame,
   onJoinGame,
   onCreateComputerGame,
+  isSearching,
+  handleCancelSearch,
 }: LobbyProps) {
   const joinGameIdParam =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("gameId") ?? ""
       : "";
-
   const [activeMode, setActiveMode] = useState<GameMode>("online");
   const [selectedTimeControl, setSelectedTimeControl] = useState<string>("10m");
   const [selectedBotId, setSelectedBotId] = useState<string>("martin");
@@ -46,7 +49,6 @@ export default function Lobby({
   const [botGameType, setBotGameType] = useState<"friendly" | "challenge">("friendly");
   const [botFilterTier, setBotFilterTier] = useState<string>("all");
   const [copied, setCopied] = useState(false);
-
   const selectedBot = BOTS.find((b) => b.id === selectedBotId) ?? BOTS[0];
 
   async function handleCopyLink() {
@@ -201,6 +203,8 @@ export default function Lobby({
               joinGameIdParam={joinGameIdParam}
               copied={copied}
               onCopyLink={handleCopyLink}
+              isSearching={isSearching}
+              handleCancelSearch={handleCancelSearch}
             />
           )}
 

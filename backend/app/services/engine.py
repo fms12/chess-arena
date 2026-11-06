@@ -44,5 +44,9 @@ def botService(botFen:str,difficulty:str):
         return chosen_moves
     finally :
         engine.quit()
+        
+        
+def FullGameReview(moves):
+    pass
 
 

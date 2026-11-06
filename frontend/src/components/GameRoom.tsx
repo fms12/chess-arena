@@ -19,6 +19,7 @@ type GameRoomProps = {
   onGameAnalysis: () => Promise<void>;
   analysisData: GameAnalysis | null;
   setAnalysisData: (value: GameAnalysis | null) => void;
+  playerColor: 'white' | 'black' | undefined;
 };
 
 export default function GameRoom({
@@ -32,7 +33,8 @@ export default function GameRoom({
   onDeclineDraw,
   onGameAnalysis,
   analysisData,
-  setAnalysisData
+  setAnalysisData,
+  playerColor,
 }: GameRoomProps) {
   const [activeTab, setActiveTab] = useState<"moves" | "info">("moves");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -95,10 +97,9 @@ export default function GameRoom({
   // Disable moves if game is completed or it's not the player's turn
   const isGameActive = game.status === "active";
   const isBotGame = Boolean(game.bot_color);
+  const myColor = playerColor ?? localPlayer?.color;
   const isMyTurn =
-    isGameActive &&
-    (isBotGame || isConnected) &&
-    localPlayer?.color === turnColor;
+    isGameActive && (isBotGame || isConnected) && myColor === turnColor;
   const canMove = isMyTurn;
 
   // Draw offer state
@@ -245,7 +246,7 @@ export default function GameRoom({
                 <Chessboard
                   options={{
                     position: game.fen,
-                    boardOrientation: localPlayer?.color ?? "white",
+                    boardOrientation: playerColor ?? localPlayer?.color ?? "white",
                     allowDragging: canMove,
                     animationDurationInMs: 300,
                     darkSquareStyle: { backgroundColor: "#739552" },

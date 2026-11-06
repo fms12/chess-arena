@@ -33,17 +33,20 @@ export async function joinGameApi(gameId: string, playerName: string) {
   return data;
 }
 
-
-export async function submitMoveApi(gameId: string , playerName: string, fromSquare: string, toSquare: string) {
-  console.log(typeof(fromSquare), typeof(toSquare));
+export async function submitMoveApi(
+  gameId: string,
+  playerName: string,
+  fromSquare: string,
+  toSquare: string,
+) {
+  console.log(typeof fromSquare, typeof toSquare);
   const { data } = await apiClient.post(`/games/${gameId}/moves`, {
     player_name: playerName,
     from_square: fromSquare,
     to_square: toSquare,
   });
-  return data
+  return data;
 }
-
 
 export async function resignGameApi(gameId: string, playerName: string) {
   const { data } = await apiClient.post(`/games/${gameId}/resign`, {
@@ -52,17 +55,21 @@ export async function resignGameApi(gameId: string, playerName: string) {
   return data;
 }
 
-export async function offerDrawApi(gameId: string, playerName: string) { 
-  const {data} = await apiClient.post(`/games/${gameId}/draw-offer`, {
+export async function offerDrawApi(gameId: string, playerName: string) {
+  const { data } = await apiClient.post(`/games/${gameId}/draw-offer`, {
     player_name: playerName,
   });
   return data;
 }
 
-export async function acceptDrawApi(gameId: string, playerName: string,accept: boolean) {
+export async function acceptDrawApi(
+  gameId: string,
+  playerName: string,
+  accept: boolean,
+) {
   const { data } = await apiClient.post(`/games/${gameId}/draw-response`, {
     player_name: playerName,
-    accept: accept
+    accept: accept,
   });
   return data;
 }
@@ -79,9 +86,35 @@ export async function createComputerGameApi(
   return data;
 }
 
-export async function gameAnalysis(gameId: string,sessionId: string) {
-  const { data } = await apiClient.post(`/games/${gameId}/analysis`,{
+export async function gameAnalysis(gameId: string, sessionId: string) {
+  const { data } = await apiClient.post(`/games/${gameId}/analysis`, {
     session_id: sessionId || "",
+  });
+  return data;
+}
+
+export async function joinMatchmakingApi(
+  playerName: string,
+  sessionId: string,
+) {
+  const { data } = await apiClient.post("/matchmaking/join", 
+    {
+    player_name: playerName,
+    session_id: sessionId,
+  },{
+    timeout: 35000
+  }
+);
+  return data;
+}
+
+export async function cancelMatchmakingApi(
+  playerName: string,
+  sessionId: string,
+) {
+  const { data } = await apiClient.post("/matchmaking/cancel", {
+    player_name: playerName,
+    session_id: sessionId,
   });
   return data;
 }

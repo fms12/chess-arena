@@ -31,7 +31,7 @@ class ConnectionManager:
         if websocket in connections:
             connections.remove(websocket)
         if not connections:
-            self.sessions.pop(session_id, None)
+            self.connections.pop(game_id, None)
             await self.pubsub.unsubscribe(channel)
         self.sessions.pop(session_id, None)
         await self.pubsub.unsubscribe(f"session:{session_id}")

@@ -10,6 +10,8 @@ type OnlineModePanelProps = {
   joinGameIdParam: string;
   copied: boolean;
   onCopyLink: () => void;
+  isSearching?: boolean;
+  handleCancelSearch?: () => void;
 };
 
 export function OnlineModePanel({
@@ -21,6 +23,8 @@ export function OnlineModePanel({
   joinGameIdParam,
   copied,
   onCopyLink,
+  isSearching,
+  handleCancelSearch,
 }: OnlineModePanelProps) {
   const [customRoomId, setCustomRoomId] = useState("");
   const [showJoinInput, setShowJoinInput] = useState(false);
@@ -73,29 +77,46 @@ export function OnlineModePanel({
       </div>
 
       {/* Primary Online Action: Create Game Button (Chess.com Green Button) */}
+      {/* Primary Online Action */}
       <div className="pt-2">
-        {!gameId && !joinGameIdParam && (
-          <button
-            type="button"
-            onClick={onCreateGame}
-            className="w-full cursor-pointer py-4 px-6 rounded-xl font-extrabold text-base tracking-wide uppercase text-white bg-[#81b64c] hover:bg-[#95c954] active:bg-[#6c9d3d] shadow-[0_4px_0_0_#457524] active:shadow-[0_1px_0_0_#457524] active:translate-y-[3px] transition-all flex items-center justify-center gap-3"
-          >
-            <span>Play Online</span>
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {!gameId &&
+          !joinGameIdParam &&
+          (isSearching ? (
+            <div className="space-y-3">
+              <div className="w-full py-4 px-6 rounded-xl font-bold text-base text-stone-300 bg-[#262421] border border-amber-500/40 flex items-center justify-center gap-3">
+                <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                <span>Searching for opponent...</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelSearch}
+                className="w-full cursor-pointer py-3 px-6 rounded-xl font-bold text-sm text-stone-400 hover:text-white bg-[#1e1c1a] hover:bg-[#2c2926] border border-stone-600/50 transition-all"
+              >
+                Cancel Search
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onCreateGame}
+              className="w-full cursor-pointer py-4 px-6 rounded-xl font-extrabold text-base tracking-wide uppercase text-white bg-[#81b64c] hover:bg-[#95c954] active:bg-[#6c9d3d] shadow-[0_4px_0_0_#457524] active:shadow-[0_1px_0_0_#457524] active:translate-y-[3px] transition-all flex items-center justify-center gap-3"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2.5"
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
-          </button>
-        )}
+              <span>Play Online</span>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </button>
+          ))}
 
         {/* If Room is already created, show Share Room Link */}
         {gameId && !joinGameIdParam && (
