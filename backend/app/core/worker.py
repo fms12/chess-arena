@@ -3,6 +3,7 @@ import asyncio
 import redis
 from app.core.config import setting
 from app.services.engine import chessEngine
+from app.core.redis import async_client
 
 r = redis.from_url(setting.REDIS_URL, decode_responses=True)
 
