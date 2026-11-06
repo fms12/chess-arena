@@ -4,11 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router, ws_router
 from app.core.config import setting
 from app.core.db import init_db
+from app.core.worker import analysis_worker_loop
+import asyncio  
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()  # <--- Automatically creates PostgreSQL tables on cloud startup!
+    analysis_worker_task = asyncio.create_task(analysis_worker_loop())
     yield
+    analysis_worker_task.cancel()
     
 app = FastAPI(lifespan=lifespan)
 

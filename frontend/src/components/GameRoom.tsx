@@ -19,7 +19,7 @@ type GameRoomProps = {
   onGameAnalysis: () => Promise<void>;
   analysisData: GameAnalysis | null;
   setAnalysisData: (value: GameAnalysis | null) => void;
-  playerColor: 'white' | 'black' | undefined;
+  playerColor: "white" | "black" | undefined;
 };
 
 export default function GameRoom({
@@ -246,7 +246,8 @@ export default function GameRoom({
                 <Chessboard
                   options={{
                     position: game.fen,
-                    boardOrientation: playerColor ?? localPlayer?.color ?? "white",
+                    boardOrientation:
+                      playerColor ?? localPlayer?.color ?? "white",
                     allowDragging: canMove,
                     animationDurationInMs: 300,
                     darkSquareStyle: { backgroundColor: "#739552" },
@@ -255,7 +256,7 @@ export default function GameRoom({
                       if (!sourceSquare || !targetSquare) return false;
                       setAnalysisData(null);
                       void onMove(sourceSquare, targetSquare);
-                      return false;
+                      return true; // <--- The piece stays INSTANTLY on your screen (0ms delay)!
                     },
                     arrows: analysisData?.best_move
                       ? [
@@ -355,13 +356,12 @@ export default function GameRoom({
                   onAcceptDraw={onAcceptDraw}
                   onDeclineDraw={onDeclineDraw}
                 />
-               <AnalysisBanner
-                    analysisData={analysisData}
-                    onAnalyze={handleRunAnalysis}
-                    isLoading={isLoadingAnalysis}
-                    onClear={() => setAnalysisData(null)}
-                  
-                  />
+                <AnalysisBanner
+                  analysisData={analysisData}
+                  onAnalyze={handleRunAnalysis}
+                  isLoading={isLoadingAnalysis}
+                  onClear={() => setAnalysisData(null)}
+                />
               </div>
 
               {/* Tab 1: Standard Chess Notation Move History */}
