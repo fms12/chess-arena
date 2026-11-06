@@ -1,8 +1,9 @@
 import json
 import redis
+from app.core.config import setting
 from app.services.engine import chessEngine
 
-r =  redis.Redis(host="localhost", port=6379, decode_responses=  True)
+r = redis.from_url(setting.REDIS_URL, decode_responses=True)
 
 QUEUE_NAME = "analysis_queue"
 

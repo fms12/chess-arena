@@ -1,7 +1,7 @@
 import redis.asyncio as aioredis
-# Async client for FastAPI WebSockets
-async_client = aioredis.Redis(
-    host="localhost",
-    port=6379,
+from app.core.config import setting
+
+async_client = aioredis.from_url(
+    setting.REDIS_URL,
     decode_responses=True
 )

@@ -4,11 +4,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Chess Game API"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str
-    STOCKFISH_PATH:str
-    TEST_DATABASE_URL: str
+    REDIS_URL: str = "redis://localhost:6379/0"
+    STOCKFISH_PATH: str = "/usr/games/stockfish"
+    TEST_DATABASE_URL: str = ""
 
     # Automatically loads the .env file
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8",extra="ignore")
 
 setting = Settings()
 
